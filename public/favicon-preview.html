@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Satisfactory Tool — Favicon Preview</title>
+<style>
+  :root { --bg: #0b0d0c; --accent: #f48229; --text: #e6e8e3; --muted: #8a8f87; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 64px;
+    gap: 40px;
+  }
+  header { text-align: center; }
+  header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  header p { color: var(--muted); font-size: 14px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    width: 100%;
+    max-width: 720px;
+  }
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 28px 16px;
+    background: #121413;
+    border: 1px solid #1d211e;
+    border-radius: 12px;
+  }
+  .cell .render {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 128px;
+  }
+  .cell img { display: block; image-rendering: auto; }
+  .cell .size {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .cell .label { font-size: 11px; color: var(--muted); }
+  .swatches { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .swatch { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .swatch i { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Satisfactory Tool — Favicon</h1>
+    <p>Industrial gear · hexagonal core · FICSIT orange</p>
+  </header>
+
+  <div class="grid">
+    <div class="cell">
+      <div class="render"><img src="favicon.svg" width="16" height="16" alt="16px"></div>
+      <div class="size">16 × 16</div>
+      <div class="label">Browser tab</div>
+    </div>
+    <div class="cell">
+      <div class="render"><img src="favicon.svg" width="32" height="32" alt="32px"></div>
+      <div class="size">32 × 32</div>
+      <div class="label">Standard favicon</div>
+    </div>
+    <div class="cell">
+      <div class="render"><img src="favicon.svg" width="64" height="64" alt="64px"></div>
+      <div class="size">64 × 64</div>
+      <div class="label">Hi-DPI / shortcut</div>
+    </div>
+    <div class="cell">
+      <div class="render"><img src="favicon.svg" width="128" height="128" alt="128px"></div>
+      <div class="size">128 × 128</div>
+      <div class="label">PWA / home screen</div>
+    </div>
+  </div>
+
+  <div class="swatches">
+    <div class="swatch"><i style="background:#f48229"></i> #f48229 — FICSIT orange</div>
+    <div class="swatch"><i style="background:#0b0d0c;border:1px solid #1d211e"></i> #0b0d0c — dark surface</div>
+  </div>
+</body>
+</html>

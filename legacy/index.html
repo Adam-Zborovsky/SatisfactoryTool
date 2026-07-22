@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 4 Production Calculator — Satisfactory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <h1>Satisfactory <span>Phase 4</span></h1>
+
+  <div class="block">
+    <div class="block-label">Tiers</div>
+    <div class="tier-rows" id="tier-breakdown"></div>
+  </div>
+
+  <div class="control-group">
+    <label>Sort by</label>
+    <select id="sort-select">
+      <option value="tier">Production tier</option>
+      <option value="name">Name (A–Z)</option>
+      <option value="quantity">Target quantity</option>
+    </select>
+  </div>
+
+  <div class="io-btns">
+    <button id="export-btn">Export backup</button>
+    <button id="import-btn">Import backup</button>
+  </div>
+  <input type="file" id="import-file" accept=".json" style="display:none">
+</aside>
+<main class="main" id="main-content"></main>
+</div>
+
+<script src="lib/calc.js"></script>
+<script src="lib/format.js"></script>
+<script src="lib/storage.js"></script>
+<script src="data/phase4-items.js"></script>
+<script src="data/phase4-recipes.js"></script>
+
+<script>
+// ── State ───────────────────────────────────────────────────
+let state = Store.load();
+
+// ── Render ──────────────────────────────────────────────────
+function render() {
+  const main = document.getElementById("main-content");
+  const sort = document.getElementById("sort-select").value;
+
+  let items = [...SF.ITEMS];
+  if (sort === "name") items.sort((a, b) => a.name.localeCompare(b.name));
+  else if (sort === "quantity") items.sort((a, b) => (state[b.id]?.quantity || 0) - (state[a.id]?.quantity || 0));
+
+  const grouped = {};
+  items.forEach(item => {
+    const t = String(item.tier);
+    if (!grouped[t]) grouped[t] = [];
+    grouped[t].push(item);
+  });
+
+  let html = "";
+  for (const t of SF.TIER_ORDER) {
+    const tierItems = grouped[t] || [];
+    if (tierItems.length === 0) continue;
+    const color = SF.TIER_COLORS[t] || "var(--text-faint)";
+
+    html += `<section class="tier-section" id="tier-${t}">`;
+    html += `<div class="tier-head" style="--tier-color:${color}">`;
+    html += `<span class="badge" style="background:${color}18;color:${color}">Tier ${t}</span>`;
+    html += `<h2>${SF.TIER_LABELS[t]}</h2>`;
+    html += `<span style="font-size:12px;color:var(--text-dim)">${tierItems.length} items</span>`;
+    html += `</div>`;
+    html += `<div class="cards">`;
+
+    tierItems.forEach(item => {
+      const s = state[item.id] || { quantity: 0, stackSize: item.stackSize, consumed: {} };
+      const target = s.quantity || 0;
+      const recipe = SF.RECIPES[item.id];
+
+      html += `<div class="card" data-id="${item.id}">`;
+      html += `<div class="card-top"><h3>${item.name}</h3></div>`;
+
+      html += `<div class="card-target">`;
+      html += `<label>Target</label>`;
+      html += `<input type="text" inputmode="numeric" value="${Fmt.fmtNum(target)}" placeholder="0"
+        onfocus="this.dataset.prev=this.value"
+        oninput="Fmt.liveFmt(this)"
+        onblur="updateTarget('${item.id}',this.value)">`;
+      html += `</div>`;
+
+      if (target > 0) {
+        const slots = Calc.totalSlots(target, s.stackSize);
+        const chests = Calc.calcChests(slots);
+        html += `<div class="card-summary">`;
+        html += `<span>Item stacks: <span class="cv">${Fmt.fmtNum(slots)}</span></span>`;
+        html += `<span>Chests: <span class="cv">${Fmt.fmtChests(chests)}</span></span>`;
+        html += `</div>`;
+      }
+
+      if (recipe && target > 0) {
+        const inputs = Calc.recipeInputs(target, recipe);
+        html += `<div class="breakdown">`;
+        html += `<div class="breakdown-label">Recipe — stacks consumed / remaining</div>`;
+        inputs.forEach(inp => {
+          const totalSlots = Calc.totalSlots(inp.quantity, inp.stackSize);
+          const used = (s.consumed && s.consumed[inp.id]) || 0;
+          const remainingSlots = Math.max(0, totalSlots - used);
+          const remChests = Calc.calcChests(remainingSlots);
+
+          html += `<div class="breakdown-row">`;
+          html += `<div class="br-info">`;
+          html += `<span class="br-name">${inp.name}</span>`;
+          html += `<span class="br-total">${Fmt.fmtNum(inp.quantity)} items · ${Fmt.fmtNum(totalSlots)} stacks total</span>`;
+          html += `</div>`;
+          html += `<div class="br-tracker">`;
+          html += `<div class="bc">`;
+          html += `<button onclick="adjConsumed('${item.id}','${inp.id}',-1)" ${used <= 0 ? "disabled" : ""}>−</button>`;
+          html += `<span class="bc-num">${Fmt.fmtNum(used)}</span>`;
+          html += `<button onclick="adjConsumed('${item.id}','${inp.id}',1)" ${used >= totalSlots ? "disabled" : ""}>+</button>`;
+          html += `</div>`;
+          html += `<span class="br-remaining">${Fmt.fmtNum(remainingSlots)} stacks left · ${Fmt.fmtChests(remChests)}</span>`;
+          html += `</div>`;
+          html += `</div>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    html += `</div></section>`;
+  }
+
+  main.innerHTML = html;
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const tc = {};
+  for (const t of SF.TIER_ORDER) tc[t] = { count: 0 };
+  SF.ITEMS.forEach(item => {
+    const t = String(item.tier);
+    if (tc[t]) tc[t].count++;
+  });
+
+  let tb = "";
+  for (const t of SF.TIER_ORDER) {
+    if (!tc[t] || tc[t].count === 0) continue;
+    const color = SF.TIER_COLORS[t] || "var(--text-faint)";
+    tb += `<div class="tier-row">`;
+    tb += `<span class="dot" style="background:${color}"></span>`;
+    tb += `<span class="tier-name">${SF.TIER_LABELS[t]}</span>`;
+    tb += `<span class="tier-count">${tc[t].count}</span>`;
+    tb += `</div>`;
+  }
+  document.getElementById("tier-breakdown").innerHTML = tb;
+}
+
+// ── Event handlers ──────────────────────────────────────────
+function updateTarget(id, raw) {
+  state[id].quantity = Fmt.parseNum(raw);
+  if (!state[id].consumed) state[id].consumed = {};
+  const recipe = SF.RECIPES[id];
+  if (recipe) {
+    recipe.inputs.forEach(inp => {
+      if (state[id].consumed[inp.id] === undefined) state[id].consumed[inp.id] = 0;
+    });
+  }
+  Store.save(state);
+  render();
+}
+
+function adjConsumed(itemId, inputId, delta) {
+  const s = state[itemId];
+  if (!s || !s.consumed) return;
+  const recipe = SF.RECIPES[itemId];
+  if (!recipe) return;
+  const inp = recipe.inputs.find(i => i.id === inputId);
+  if (!inp) return;
+  const totalSlots = Calc.totalSlots(Calc.recipeInputs(s.quantity, recipe).find(i => i.id === inputId).quantity, inp.stackSize);
+  s.consumed[inputId] = Math.max(0, Math.min(totalSlots, (s.consumed[inputId] || 0) + delta));
+  Store.save(state);
+  render();
+}
+
+document.getElementById("sort-select").addEventListener("change", render);
+
+document.getElementById("export-btn").addEventListener("click", () => Store.exportBackup(state));
+document.getElementById("import-btn").addEventListener("click", () => document.getElementById("import-file").click());
+document.getElementById("import-file").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (f) Store.importBackup(f, state, render);
+  e.target.value = "";
+});
+
+// ── Init ────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

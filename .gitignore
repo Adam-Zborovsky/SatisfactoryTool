@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Game data source (large, not needed in repo — users provide their own)
+scripts/en-US.json
+scripts/Docs.json
+CommunityResources/
+
+# Plan exports (user-generated)
+*-20*.json
+Phase*-20*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
