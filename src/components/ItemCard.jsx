@@ -46,9 +46,19 @@ export default function ItemCard({ item, plan, registry, editMode, onUpdateState
   const adjustIngredient = (input, delta) => {
     if (!recipe) return;
     const currentStacks = getConsumedStacks(input);
-    const targetStacks = currentStacks + delta;
+    applyIngredientTarget(input, currentStacks + delta);
+  };
+
+  const setIngredient = (input, targetStacks) => {
+    if (!recipe) return;
+    applyIngredientTarget(input, targetStacks);
+  };
+
+  const applyIngredientTarget = (input, targetStacks) => {
+    const currentStacks = getConsumedStacks(input);
+    if (targetStacks === currentStacks) return;
     let newCrafted;
-    if (delta > 0) {
+    if (targetStacks > currentStacks) {
       newCrafted = craftedFromStacks(recipe, input, targetStacks);
     } else {
       newCrafted = craftedDecreaseForStacks(recipe, input, targetStacks, craftedCount);
@@ -201,6 +211,7 @@ export default function ItemCard({ item, plan, registry, editMode, onUpdateState
                     input={inp}
                     consumed={getConsumedStacks(inp)}
                     onAdjust={(delta) => adjustIngredient(inp, delta)}
+                    onSet={(stacks) => setIngredient(inp, stacks)}
                   />
                 ))}
               </div>
@@ -246,6 +257,7 @@ export default function ItemCard({ item, plan, registry, editMode, onUpdateState
               input={inp}
               consumed={getConsumedStacks(inp)}
               onAdjust={(delta) => adjustIngredient(inp, delta)}
+              onSet={(stacks) => setIngredient(inp, stacks)}
             />
           ))}
         </div>
