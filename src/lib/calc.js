@@ -32,17 +32,3 @@ export function recipeInputs(targetQuantity, recipe) {
     crafts,
   }));
 }
-
-export function craftedFromStacks(recipe, input, targetStacks) {
-  if (!recipe || targetStacks <= 0) return 0;
-  const itemsNeeded = (targetStacks - 1) * (input.stackSize || 1) + 1;
-  const crafts = Math.ceil(itemsNeeded / (input.quantity || 1));
-  return Math.min(crafts * recipe.outputPerCraft, crafts * recipe.outputPerCraft);
-}
-
-export function craftedDecreaseForStacks(recipe, input, targetStacks, maxCrafted) {
-  if (!recipe || targetStacks <= 0) return 0;
-  const itemsLimit = targetStacks * (input.stackSize || 1);
-  const crafts = Math.floor(itemsLimit / (input.quantity || 1));
-  return Math.min(maxCrafted, Math.max(0, crafts * recipe.outputPerCraft));
-}

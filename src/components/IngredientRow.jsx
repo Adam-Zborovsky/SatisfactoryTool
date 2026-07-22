@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { fmtNum, fmtChests, parseNum } from '../lib/format';
-import { totalSlots, calcChests, slotRemainder } from '../lib/calc';
+import { calcChests } from '../lib/calc';
 
-export default function IngredientRow({ input, consumed, onAdjust, onSet }) {
-  const total = totalSlots(input.quantity, input.stackSize);
+export default function IngredientRow({ input, consumed, total, onAdjust, onSet }) {
   const remaining = Math.max(0, total - consumed);
   const remChests = calcChests(remaining);
   const totalChests = calcChests(total);
-  const totalRem = slotRemainder(input.quantity, input.stackSize);
+  const fullStacks = Math.floor(input.quantity / input.stackSize);
+  const overflow = input.quantity % input.stackSize;
 
   const [localVal, setLocalVal] = useState('');
 
@@ -24,6 +24,7 @@ export default function IngredientRow({ input, consumed, onAdjust, onSet }) {
   const handleBlur = () => {
     const target = parseNum(localVal);
     onSet(Math.min(target, total));
+    setTimeout(() => setLocalVal(fmtNum(consumed)), 60);
   };
 
   const handleKeyDown = (e) => {
@@ -35,8 +36,8 @@ export default function IngredientRow({ input, consumed, onAdjust, onSet }) {
       <div className="br-info">
         <span className="br-name">{input.name}</span>
         <span className="br-total">
-          {fmtNum(input.quantity)} items · {fmtNum(total)} stacks
-          {totalRem > 0 && <span style={{ color: 'var(--ink-faint)' }}> +{fmtNum(totalRem)}</span>}
+          {fmtNum(input.quantity)} items · {fmtNum(fullStacks)} stacks
+          {overflow > 0 && <span style={{ color: 'var(--ink-faint)' }}> +{fmtNum(overflow)}</span>}
           {' · '}
           {totalChests.full > 0 || totalChests.rem > 0
             ? fmtChests(totalChests)
@@ -45,7 +46,8 @@ export default function IngredientRow({ input, consumed, onAdjust, onSet }) {
       </div>
       <div className="br-tracker">
         <div className="bc">
-          <button onClick={() => onAdjust(-1)} disabled={consumed <= 0}>-</button>
+          <button onClick={() => onAdjust(-48)} style={{ fontSize: 10 }}>−48</button>
+          <button onClick={() => onAdjust(-1)} style={{ fontSize: 13 }}>−</button>
           <input
             type="text"
             inputMode="numeric"
@@ -56,12 +58,13 @@ export default function IngredientRow({ input, consumed, onAdjust, onSet }) {
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             style={{
-              width: 48, textAlign: 'center', background: 'transparent', color: 'var(--ink)',
+              width: 54, textAlign: 'center', background: 'transparent', color: 'var(--ink)',
               border: 'none', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)',
               fontWeight: 600, outline: 'none', padding: 0, lineHeight: '26px',
             }}
           />
-          <button onClick={() => onAdjust(1)} disabled={consumed >= total}>+</button>
+          <button onClick={() => onAdjust(1)} style={{ fontSize: 13 }}>+</button>
+          <button onClick={() => onAdjust(48)} style={{ fontSize: 10 }}>+48</button>
         </div>
         <span className="br-remaining">{fmtNum(remaining)} stacks left · {fmtChests(remChests)}</span>
       </div>

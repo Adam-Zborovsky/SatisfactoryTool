@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { recipeInputs, totalSlots, calcChests, craftedFromStacks, craftedDecreaseForStacks } from '../lib/calc';
+import { recipeInputs, totalSlots, totalStacks, calcChests } from '../lib/calc';
 import { fmtNum, parseNum, fmtChests } from '../lib/format';
 import IngredientRow from './IngredientRow';
 
@@ -36,34 +36,42 @@ export default function ItemCard({ item, plan, registry, editMode, onUpdateState
 
   const stepSize = item.stackSize || 50;
 
-  const getConsumedStacks = (input) => {
+  const ingredientItems = (input) => {
     if (!recipe || craftedCount <= 0) return 0;
     const craftedInputs = recipeInputs(craftedCount, recipe);
     const match = craftedInputs.find(i => i.id === input.id);
-    return match ? totalSlots(match.quantity, input.stackSize) : 0;
+    return match ? match.quantity : 0;
+  };
+
+  const ingredientTotal = (input) => {
+    if (!recipe || target <= 0) return 0;
+    const targetInputs = recipeInputs(target, recipe);
+    const match = targetInputs.find(i => i.id === input.id);
+    return match ? match.quantity : 0;
+  };
+
+  const consumedFloat = (input) => totalStacks(ingredientItems(input), input.stackSize);
+  const totalFloat = (input) => totalStacks(ingredientTotal(input), input.stackSize);
+  const consumedInt = (input) => totalSlots(ingredientItems(input), input.stackSize);
+  const totalInt = (input) => totalSlots(ingredientTotal(input), input.stackSize);
+
+  const reverseCrafted = (input, targetFloat) => {
+    const targetItems = Math.ceil(targetFloat * input.stackSize);
+    const crafts = Math.ceil(targetItems / input.perCraft);
+    return crafts * recipe.outputPerCraft;
   };
 
   const adjustIngredient = (input, delta) => {
     if (!recipe) return;
-    const currentStacks = getConsumedStacks(input);
-    applyIngredientTarget(input, currentStacks + delta);
+    const current = consumedFloat(input);
+    const tgt = Math.max(0, current + delta);
+    const newCrafted = Math.max(0, Math.min(target, reverseCrafted(input, tgt)));
+    onUpdateState(item.id, { crafted: newCrafted });
   };
 
-  const setIngredient = (input, targetStacks) => {
+  const setIngredient = (input, targetFloat) => {
     if (!recipe) return;
-    applyIngredientTarget(input, targetStacks);
-  };
-
-  const applyIngredientTarget = (input, targetStacks) => {
-    const currentStacks = getConsumedStacks(input);
-    if (targetStacks === currentStacks) return;
-    let newCrafted;
-    if (targetStacks > currentStacks) {
-      newCrafted = craftedFromStacks(recipe, input, targetStacks);
-    } else {
-      newCrafted = craftedDecreaseForStacks(recipe, input, targetStacks, craftedCount);
-    }
-    newCrafted = Math.max(0, Math.min(target, newCrafted));
+    const newCrafted = Math.max(0, Math.min(target, reverseCrafted(input, Math.max(0, targetFloat))));
     onUpdateState(item.id, { crafted: newCrafted });
   };
 
@@ -209,7 +217,8 @@ export default function ItemCard({ item, plan, registry, editMode, onUpdateState
                   <IngredientRow
                     key={inp.id}
                     input={inp}
-                    consumed={getConsumedStacks(inp)}
+                    consumed={consumedInt(inp)}
+                    total={totalInt(inp)}
                     onAdjust={(delta) => adjustIngredient(inp, delta)}
                     onSet={(stacks) => setIngredient(inp, stacks)}
                   />
@@ -255,7 +264,8 @@ export default function ItemCard({ item, plan, registry, editMode, onUpdateState
             <IngredientRow
               key={inp.id}
               input={inp}
-              consumed={getConsumedStacks(inp)}
+              consumed={consumedInt(inp)}
+              total={totalInt(inp)}
               onAdjust={(delta) => adjustIngredient(inp, delta)}
               onSet={(stacks) => setIngredient(inp, stacks)}
             />
